@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Disc Golf Scorecard</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e1117;
+    --surface: #161b27;
+    --surface2: #1e2535;
+    --border: #2a3347;
+    --accent: #4ade80;
+    --accent2: #22d3ee;
+    --danger: #f87171;
+    --text: #e8edf5;
+    --muted: #8896b0;
+    --birdie: #4ade80;
+    --eagle: #fbbf24;
+    --bogey: #f87171;
+    --par: #8896b0;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    padding-bottom: 40px;
+  }
+
+  .header {
+    background: linear-gradient(135deg, #0e1117 0%, #161b27 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 20px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(12px);
+  }
+
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .round-info {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 300;
+    letter-spacing: 0.5px;
+  }
+
+  /* Save indicator */
+  .save-indicator {
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+  .save-indicator.visible { opacity: 1; }
+  .save-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  .setup-section { padding: 20px; }
+
+  .section-label {
+    font-family: 'Bebas Neue', sans-serif;
+    letter-spacing: 2px;
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .player-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .player-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    animation: slideIn 0.25s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .player-color-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .player-name-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .player-name-input:focus { border-color: var(--accent); }
+  .player-name-input::placeholder { color: var(--muted); }
+
+  .remove-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 20px;
+    cursor: pointer;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: color 0.2s, background 0.2s;
+  }
+  .remove-btn:hover { color: var(--danger); background: rgba(248,113,113,0.1); }
+
+  .add-player-btn {
+    width: 100%;
+    padding: 12px;
+    background: transparent;
+    border: 1.5px dashed var(--border);
+    border-radius: 10px;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.3px;
+  }
+  .add-player-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(74,222,128,0.05);
+  }
+
+  .hole-section {
+    padding: 0 20px;
+    margin-top: 8px;
+  }
+
+  .hole-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 10px;
+    animation: slideIn 0.25s ease;
+    transition: border-color 0.2s;
+  }
+
+  .hole-card.active {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px rgba(74,222,128,0.2);
+  }
+
+  .hole-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .hole-number {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 1px;
+    color: var(--text);
+  }
+
+  .hole-number span {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    letter-spacing: 1px;
+    margin-left: 6px;
+    font-weight: 400;
+  }
+
+  .delete-hole-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: all 0.2s;
+  }
+  .delete-hole-btn:hover { color: var(--danger); background: rgba(248,113,113,0.1); }
+
+  .scores-grid { display: grid; gap: 8px; }
+
+  .score-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .score-player-name {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .score-controls {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 3px;
+  }
+
+  .score-btn {
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: none;
+    color: var(--muted);
+    font-size: 20px;
+    cursor: pointer;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    font-weight: 300;
+    line-height: 1;
+  }
+  .score-btn:active { transform: scale(0.88); }
+  .score-btn.minus:hover { color: var(--danger); background: rgba(248,113,113,0.15); }
+  .score-btn.plus:hover { color: var(--accent); background: rgba(74,222,128,0.15); }
+
+  .score-value {
+    min-width: 42px;
+    text-align: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 24px;
+    letter-spacing: 0.5px;
+    transition: color 0.2s;
+  }
+  .score-value.birdie { color: var(--birdie); }
+  .score-value.eagle { color: var(--eagle); }
+  .score-value.bogey { color: var(--bogey); }
+  .score-value.par { color: var(--par); }
+
+  .add-hole-btn {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, rgba(74,222,128,0.12), rgba(34,211,238,0.12));
+    border: 1.5px solid rgba(74,222,128,0.3);
+    border-radius: 12px;
+    color: var(--accent);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.3px;
+    margin: 4px 0 16px;
+  }
+  .add-hole-btn:active {
+    transform: scale(0.97);
+    background: linear-gradient(135deg, rgba(74,222,128,0.2), rgba(34,211,238,0.2));
+  }
+
+  .scoreboard {
+    margin: 0 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .scoreboard-header {
+    padding: 14px 16px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    font-family: 'Bebas Neue', sans-serif;
+    letter-spacing: 2px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .scoreboard-row {
+    display: flex;
+    align-items: center;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    gap: 12px;
+    transition: background 0.15s;
+  }
+  .scoreboard-row:last-child { border-bottom: none; }
+
+  .rank-badge {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .rank-1 { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #000; }
+  .rank-2 { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+  .rank-3 { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+  .rank-other { background: transparent; color: var(--muted); font-size: 12px; }
+
+  .sb-name { flex: 1; font-size: 15px; font-weight: 500; }
+  .sb-holes { font-size: 12px; color: var(--muted); font-weight: 300; }
+
+  .sb-total {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 0.5px;
+    min-width: 50px;
+    text-align: right;
+  }
+  .sb-total.positive { color: var(--bogey); }
+  .sb-total.negative { color: var(--birdie); }
+  .sb-total.zero { color: var(--muted); }
+
+  .color-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 20px 20px;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 30px 20px;
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 300;
+  }
+  .empty-icon { font-size: 36px; margin-bottom: 10px; opacity: 0.4; }
+
+  .legend {
+    display: flex;
+    gap: 16px;
+    padding: 0 20px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  .reset-btn {
+    display: block;
+    margin: 20px auto 0;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    padding: 8px 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .reset-btn:hover { color: var(--danger); border-color: var(--danger); }
+
+  .pc-0 { background: #4ade80; }
+  .pc-1 { background: #22d3ee; }
+  .pc-2 { background: #f472b6; }
+  .pc-3 { background: #fb923c; }
+  .pc-4 { background: #a78bfa; }
+  .pc-5 { background: #facc15; }
+
+  .per-hole-row { display: flex; gap: 3px; margin-top: 4px; flex-wrap: wrap; }
+
+  .mini-score {
+    font-size: 10px;
+    font-family: 'Bebas Neue', sans-serif;
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.7;
+  }
+  .mini-birdie { background: rgba(74,222,128,0.2); color: var(--birdie); }
+  .mini-eagle { background: rgba(251,191,36,0.2); color: var(--eagle); }
+  .mini-bogey { background: rgba(248,113,113,0.2); color: var(--bogey); }
+  .mini-par { background: rgba(136,150,176,0.15); color: var(--muted); }
+
+  @keyframes pulse-green {
+    0% { box-shadow: 0 0 0 0 rgba(74,222,128,0.4); }
+    70% { box-shadow: 0 0 0 8px rgba(74,222,128,0); }
+    100% { box-shadow: 0 0 0 0 rgba(74,222,128,0); }
+  }
+  .pulse { animation: pulse-green 0.4s ease; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div class="logo">🥏 Disc Golf</div>
+    <div class="header-right">
+      <div class="save-indicator" id="save-indicator">
+        <div class="save-dot"></div>
+        <span>Tallennettu</span>
+      </div>
+      <div class="round-info" id="round-info">0 väylää pelattu</div>
+    </div>
+  </div>
+</div>
+
+<div class="setup-section">
+  <div class="section-label">PELAAJAT</div>
+  <div class="player-inputs" id="player-inputs"></div>
+  <button class="add-player-btn" onclick="addPlayer()">+ Lisää pelaaja</button>
+</div>
+
+<div class="divider"></div>
+
+<div class="hole-section">
+  <div class="section-label" style="padding: 0;">TULOKSET (±par)</div>
+  <div style="height:12px"></div>
+  <div id="holes-container"></div>
+  <button class="add-hole-btn" onclick="addHole()">+ Lisää väylä</button>
+</div>
+
+<div class="scoreboard" id="scoreboard">
+  <div class="scoreboard-header">KOKONAISTULOKSET</div>
+  <div id="scoreboard-rows">
+    <div class="empty-state">
+      <div class="empty-icon">📋</div>
+      Lisää pelaajia ja kirjaa tulokset
+    </div>
+  </div>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:var(--eagle)"></div> Eagle (−2)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--birdie)"></div> Birdie (−1)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--par)"></div> Par (0)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--bogey)"></div> Bogey (+1 tai yli)</div>
+</div>
+
+<button class="reset-btn" onclick="confirmReset()">Nollaa kaikki tulokset</button>
+
+<script>
+const STORAGE_KEY = 'discgolf_v1';
+const PLAYER_COLORS = ['pc-0','pc-1','pc-2','pc-3','pc-4','pc-5'];
+
+let players = [];
+let holes = [];
+let playerIdCounter = 0;
+let holeIdCounter = 0;
+let saveTimer = null;
+
+// ── LOCALSTORAGE ──────────────────────────────────────────────
+function saveState() {
+  try {
+    const state = { players, holes, playerIdCounter, holeIdCounter };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    showSaveIndicator();
+  } catch(e) { /* storage full or unavailable */ }
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    const s = JSON.parse(raw);
+    players = s.players || [];
+    holes = s.holes || [];
+    playerIdCounter = s.playerIdCounter || 0;
+    holeIdCounter = s.holeIdCounter || 0;
+    return players.length > 0;
+  } catch(e) { return false; }
+}
+
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveState, 400);
+}
+
+function showSaveIndicator() {
+  const el = document.getElementById('save-indicator');
+  el.classList.add('visible');
+  clearTimeout(el._hideTimer);
+  el._hideTimer = setTimeout(() => el.classList.remove('visible'), 1800);
+}
+
+// ── HELPERS ───────────────────────────────────────────────────
+function getScoreClass(val) {
+  if (val <= -2) return 'eagle';
+  if (val === -1) return 'birdie';
+  if (val === 0) return 'par';
+  return 'bogey';
+}
+function getMiniClass(val) {
+  if (val <= -2) return 'mini-eagle';
+  if (val === -1) return 'mini-birdie';
+  if (val === 0) return 'mini-par';
+  return 'mini-bogey';
+}
+function formatScore(val) {
+  if (val === null || val === undefined) return '–';
+  if (val === 0) return 'E';
+  return val > 0 ? '+' + val : '' + val;
+}
+function escHtml(str) {
+  return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── PLAYERS ───────────────────────────────────────────────────
+function addPlayer() {
+  if (players.length >= 6) return;
+  const id = ++playerIdCounter;
+  players.push({ id, name: '' });
+  holes.forEach(h => { h.scores[id] = 0; });
+  renderPlayers();
+  renderHoles();
+  renderScoreboard();
+  scheduleSave();
+  setTimeout(() => {
+    const inputs = document.querySelectorAll('.player-name-input');
+    if (inputs.length) inputs[inputs.length - 1].focus();
+  }, 50);
+}
+
+function removePlayer(id) {
+  players = players.filter(p => p.id !== id);
+  holes.forEach(h => delete h.scores[id]);
+  renderPlayers();
+  renderHoles();
+  renderScoreboard();
+  scheduleSave();
+}
+
+function renderPlayers() {
+  const container = document.getElementById('player-inputs');
+  container.innerHTML = '';
+  players.forEach((p, idx) => {
+    const row = document.createElement('div');
+    row.className = 'player-row';
+    row.innerHTML = `
+      <div class="player-color-dot ${PLAYER_COLORS[idx % 6]}"></div>
+      <input class="player-name-input" type="text" placeholder="Pelaajan nimi"
+        value="${escHtml(p.name)}"
+        oninput="updatePlayerName(${p.id}, this.value)"
+        onblur="renderAll()">
+      ${players.length > 1 ? `<button class="remove-btn" onclick="removePlayer(${p.id})">✕</button>` : ''}
+    `;
+    container.appendChild(row);
+  });
+}
+
+function updatePlayerName(id, val) {
+  const p = players.find(p => p.id === id);
+  if (p) p.name = val;
+  renderScoreboard();
+  document.querySelectorAll(`.score-player-name[data-pid="${id}"]`).forEach(el => {
+    el.textContent = val || `Pelaaja ${players.findIndex(p => p.id === id) + 1}`;
+  });
+  scheduleSave();
+}
+
+// ── HOLES ─────────────────────────────────────────────────────
+function addHole() {
+  const id = ++holeIdCounter;
+  const scores = {};
+  players.forEach(p => scores[p.id] = 0);
+  holes.push({ id, scores });
+  renderHoles();
+  renderScoreboard();
+  updateRoundInfo();
+  scheduleSave();
+  setTimeout(() => {
+    const cards = document.querySelectorAll('.hole-card');
+    if (cards.length) cards[cards.length-1].scrollIntoView({ behavior:'smooth', block:'center' });
+  }, 60);
+}
+
+function deleteHole(id) {
+  holes = holes.filter(h => h.id !== id);
+  renderHoles();
+  renderScoreboard();
+  updateRoundInfo();
+  scheduleSave();
+}
+
+function changeScore(holeId, playerId, delta) {
+  const hole = holes.find(h => h.id === holeId);
+  if (!hole) return;
+  hole.scores[playerId] = (hole.scores[playerId] || 0) + delta;
+  const el = document.getElementById(`sv-${holeId}-${playerId}`);
+  if (el) {
+    const val = hole.scores[playerId];
+    el.textContent = formatScore(val);
+    el.className = 'score-value ' + getScoreClass(val);
+    el.classList.add('pulse');
+    el.addEventListener('animationend', () => el.classList.remove('pulse'), { once: true });
+  }
+  renderScoreboard();
+  scheduleSave();
+}
+
+function renderHoles() {
+  const container = document.getElementById('holes-container');
+  container.innerHTML = '';
+  if (players.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">👤</div>Lisää ensin pelaajat</div>`;
+    return;
+  }
+  holes.forEach((hole, hIdx) => {
+    const card = document.createElement('div');
+    card.className = 'hole-card';
+    card.id = `hole-${hole.id}`;
+    let scoresHtml = '';
+    players.forEach((p, pIdx) => {
+      const val = hole.scores[p.id] || 0;
+      const sc = getScoreClass(val);
+      const name = p.name || `Pelaaja ${pIdx + 1}`;
+      scoresHtml += `
+        <div class="score-row">
+          <div class="color-dot ${PLAYER_COLORS[pIdx % 6]}"></div>
+          <div class="score-player-name" data-pid="${p.id}">${escHtml(name)}</div>
+          <div class="score-controls">
+            <button class="score-btn minus" ontouchstart="" onclick="changeScore(${hole.id}, ${p.id}, -1)">−</button>
+            <div class="score-value ${sc}" id="sv-${hole.id}-${p.id}">${formatScore(val)}</div>
+            <button class="score-btn plus" ontouchstart="" onclick="changeScore(${hole.id}, ${p.id}, 1)">+</button>
+          </div>
+        </div>`;
+    });
+    card.innerHTML = `
+      <div class="hole-header">
+        <div class="hole-number">Väylä ${hIdx + 1} <span>/ ${holes.length}</span></div>
+        <button class="delete-hole-btn" onclick="deleteHole(${hole.id})">❌</button>
+      </div>
+      <div class="scores-grid">${scoresHtml}</div>`;
+    container.appendChild(card);
+  });
+}
+
+function renderScoreboard() {
+  const container = document.getElementById('scoreboard-rows');
+  if (players.length === 0 || holes.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div>Lisää pelaajia ja kirjaa tulokset</div>`;
+    return;
+  }
+  const totals = players.map((p, pIdx) => {
+    let total = 0;
+    const holeScores = [];
+    holes.forEach(h => { const s = h.scores[p.id] || 0; total += s; holeScores.push(s); });
+    return { player: p, pIdx, total, holesPlayed: holes.length, holeScores };
+  });
+  totals.sort((a, b) => a.total - b.total);
+  container.innerHTML = totals.map((t, rank) => {
+    const name = t.player.name || `Pelaaja ${t.pIdx + 1}`;
+    const totalFmt = formatScore(t.total);
+    const totalClass = t.total > 0 ? 'positive' : t.total < 0 ? 'negative' : 'zero';
+    const miniHtml = t.holeScores.map(s =>
+      `<div class="mini-score ${getMiniClass(s)}">${s===0?'E':(s>0?'+'+s:s)}</div>`).join('');
+    const rankHtml = rank === 0 ? `<div class="rank-badge rank-1">1</div>`
+      : rank === 1 ? `<div class="rank-badge rank-2">2</div>`
+      : rank === 2 ? `<div class="rank-badge rank-3">3</div>`
+      : `<div class="rank-badge rank-other">${rank+1}</div>`;
+    return `
+      <div class="scoreboard-row">
+        ${rankHtml}
+        <div class="color-dot ${PLAYER_COLORS[t.pIdx % 6]}"></div>
+        <div style="flex:1;min-width:0;">
+          <div class="sb-name">${escHtml(name)}</div>
+          <div class="per-hole-row">${miniHtml}</div>
+        </div>
+        <div>
+          <div class="sb-total ${totalClass}">${totalFmt}</div>
+          <div class="sb-holes" style="text-align:right">${t.holesPlayed} väylää</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function updateRoundInfo() {
+  document.getElementById('round-info').textContent =
+    `${holes.length} väylä${holes.length !== 1 ? 'ä' : ''} pelattu`;
+}
+
+function renderAll() {
+  renderPlayers();
+  renderHoles();
+  renderScoreboard();
+}
+
+function confirmReset() {
+  if (holes.length === 0 && players.length <= 1) return;
+  if (confirm('Nollataan kaikki tulokset? Pelaajat säilyvät.')) {
+    holes = [];
+    holeIdCounter = 0;
+    renderHoles();
+    renderScoreboard();
+    updateRoundInfo();
+    scheduleSave();
+  }
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+const restored = loadState();
+if (restored) {
+  renderAll();
+  updateRoundInfo();
+} else {
+  addPlayer();
+  addPlayer();
+}
+</script>
+</body>
+</html>
